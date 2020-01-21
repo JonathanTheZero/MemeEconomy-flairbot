@@ -1,0 +1,27 @@
+{
+  "name": "memeeconomy-flairbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "js/main.js",
+  "dependencies": {
+    "@types/node-fetch": "^2.5.4",
+    "@types/request": "^2.48.4",
+    "node-fetch": "^2.6.0",
+    "snoowrap": "^1.20.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "tsc && node js/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonathanTheZero/MemeEconomy-flairbot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JonathanTheZero/MemeEconomy-flairbot/issues"
+  },
+  "homepage": "https://github.com/JonathanTheZero/MemeEconomy-flairbot#readme"
+}
