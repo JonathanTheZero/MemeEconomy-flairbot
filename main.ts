@@ -31,9 +31,11 @@ async function flairPosts(limit=settings.limit): Promise<void> {
     for(let post of submissions){
         http.get(`${webUrl}/indices/${post.id}:subm`, (res) => {
             let body: string = "";
+            
             res.on("data", (chunk) => {
                 body += chunk;
             });
+
             res.on("end", () => {
                 let data: indexData = JSON.parse(body);
                 post.assignFlair({
@@ -42,6 +44,7 @@ async function flairPosts(limit=settings.limit): Promise<void> {
                 });
                 console.log("Success for post: " + post.id);
             });
+
         }).on("error", (e) => {
             console.error(e.message);
         });
@@ -55,9 +58,11 @@ async function flairUser(user: RedditUser | string): Promise<void>{
 
     http.get(`${webUrl}/indices/${user.name}:user`, (res) => {
         let body: string = "";
+
         res.on("data", (chunk) => {
             body += chunk;
         });
+
         res.on("end", () => {
             let data: userData = JSON.parse(body);
             (user as RedditUser).assignFlair({
@@ -66,6 +71,7 @@ async function flairUser(user: RedditUser | string): Promise<void>{
             });
             console.log("Success for user: " + (user as RedditUser).name);
         });
+
     }).on("error", (e) => {
         console.error(e.message);
     });
