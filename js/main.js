@@ -13,11 +13,11 @@ const r = new snoowrap_1.default({
     username: config_json_1.username,
     password: config_json_1.password
 });
-const subreddit = r.getSubreddit("memeinvestor_test");
+const sub = "memeinvestor_test";
+const subreddit = r.getSubreddit(sub);
 (async () => {
     while (true) {
-        await flairUser("JonathanTheZero");
-        await flairPosts();
+        await flairUser("Wunder_Kindd");
         await Sleep(10000);
     }
 })();
@@ -33,6 +33,9 @@ async function flairPosts(limit = config_json_1.settings.limit) {
             });
             res.on("end", () => {
                 let data = JSON.parse(body);
+                if (instanceOfErr(data)) {
+                    throw new Error("Err: Couldn't reach API");
+                }
                 post.assignFlair({
                     text: `Price: ${data.price.commafy()} M¢`,
                     cssClass: config_json_1.settings.CSSclass
@@ -48,15 +51,19 @@ async function flairUser(user) {
     if (typeof user === "string") {
         user = r.getUser(user);
     }
-    http_1.default.get(`${config_json_1.webUrl}/indices/${user.name}:user`, (res) => {
+    http_1.default.get(`${config_json_1.webUrl}/investors/${user.name}`, (res) => {
         let body = "";
         res.on("data", (chunk) => {
             body += chunk;
         });
         res.on("end", () => {
             let data = JSON.parse(body);
+            if (instanceOfErr(data)) {
+                throw new Error("Err: Couldn't reach API");
+            }
             user.assignFlair({
-                text: `${data.index.price.commafy()} M¢`,
+                subreddit: sub,
+                text: `${data.index.price.commafy()} M¢${(data.firm && data.firm.name) ? `| ${data.firm.name + " " + data.firm.index.price.commafy()}M¢` : ""}`,
                 cssClass: config_json_1.settings.CSSclass
             });
             console.log("Success for user: " + user.name);
@@ -76,3 +83,6 @@ String.prototype.commafy = function () {
         return $1 + $2.replace(/\d(?=(?:\d\d\d)+(?!\d))/g, "$&,");
     });
 };
+function instanceOfErr(object) {
+    return 'err' in object;
+}

@@ -2,7 +2,7 @@ import snoowrap, { Subreddit, Submission, RedditUser } from "snoowrap";
 import { username, password, clientID, clientSecret, webUrl, settings } from "./config.json";
 import http from "http";
 import https from "https";
-import { indexData, userData } from "./main.d";
+import { indexData, userData, apiErr } from "./main.d";
 
 const r: snoowrap = new snoowrap({
     userAgent: "MemeEconomy Flair Bot",
@@ -12,13 +12,14 @@ const r: snoowrap = new snoowrap({
     password: password
 });
 
-const subreddit: Subreddit = r.getSubreddit("memeinvestor_test");
+const sub = "memeinvestor_test";
+const subreddit: Subreddit = r.getSubreddit(sub);
 
 //main loop
 (async () => {
     while (true) {
-        await flairUser("JonathanTheZero");
-        await flairPosts();
+        await flairUser("Wunder_Kindd");
+        //await flairPosts();
         await Sleep(10000);
     }
 })();
@@ -31,13 +32,16 @@ async function flairPosts(limit=settings.limit): Promise<void> {
     for(let post of submissions){
         http.get(`${webUrl}/indices/${post.id}:subm`, (res) => {
             let body: string = "";
-            
+
             res.on("data", (chunk) => {
                 body += chunk;
             });
 
             res.on("end", () => {
-                let data: indexData = JSON.parse(body);
+                let data: indexData | apiErr = JSON.parse(body);
+                if(instanceOfErr(data)){
+                    throw new Error("Couldn't reach API\nResponse was " + data.err);
+                }
                 post.assignFlair({
                     text: `Price: ${data.price.commafy()} M¢`,
                     cssClass: settings.CSSclass
@@ -56,7 +60,7 @@ async function flairUser(user: RedditUser | string): Promise<void>{
         user = r.getUser(user);
     }
 
-    http.get(`${webUrl}/indices/${user.name}:user`, (res) => {
+    http.get(`${webUrl}/investors/${user.name}`, (res) => {
         let body: string = "";
 
         res.on("data", (chunk) => {
@@ -64,9 +68,13 @@ async function flairUser(user: RedditUser | string): Promise<void>{
         });
 
         res.on("end", () => {
-            let data: userData = JSON.parse(body);
+            let data: userData | apiErr = JSON.parse(body);
+            if(instanceOfErr(data)){
+                throw new Error("Couldn't reach API\nResponse was " + data.err);
+            }
             (user as RedditUser).assignFlair({
-                text: `${data.index.price.commafy()} M¢`,
+                subreddit: sub,
+                text: `${data.index.price.commafy()} M¢${(data.firm && data.firm.name) ? `| ${data.firm.name + " " + data.firm.index.price.commafy()}M¢` : ""}`,
                 cssClass: settings.CSSclass
             });
             console.log("Success for user: " + (user as RedditUser).name);
@@ -90,3 +98,7 @@ String.prototype.commafy = function () {
         return $1 + $2.replace(/\d(?=(?:\d\d\d)+(?!\d))/g, "$&,");
     });
 };
+
+function instanceOfErr(object: any): object is apiErr {
+    return 'err' in object;
+}

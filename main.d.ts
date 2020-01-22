@@ -48,6 +48,10 @@ declare namespace main {
         networth: number;
         badges: string[] | null;
     }
+
+    interface apiErr {
+        err: string;
+    }
 }
 
 declare global {
