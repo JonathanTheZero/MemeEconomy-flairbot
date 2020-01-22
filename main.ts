@@ -1,7 +1,8 @@
-import snoowrap, { Subreddit, Submission } from "snoowrap";
+import snoowrap, { Subreddit, Submission, RedditUser } from "snoowrap";
 import { username, password, clientID, clientSecret, webUrl, settings } from "./config.json";
 import http from "http";
 import https from "https";
+import { indexData, userData } from "./main.d";
 
 const r: snoowrap = new snoowrap({
     userAgent: "MemeEconomy Flair Bot",
@@ -13,63 +14,73 @@ const r: snoowrap = new snoowrap({
 
 const subreddit: Subreddit = r.getSubreddit("memeinvestor_test");
 
-function Sleep(ms: number) {
-    return new Promise(res => setTimeout(res, ms));
-}
-
+//main loop
 (async () => {
     while (true) {
-        const test = await subreddit.getNew({
-            limit: settings.limit
-        });
+        await flairUser("JonathanTheZero");
+        await flairPosts();
+        await Sleep(10000);
+    }
+})();
 
-        http.get(`${webUrl}/indices/${test[0].id}:subm`, (res) => {
+async function flairPosts(limit=settings.limit): Promise<void> {
+    const submissions = await subreddit.getNew({
+        limit: limit
+    });
+
+    for(let post of submissions){
+        http.get(`${webUrl}/indices/${post.id}:subm`, (res) => {
             let body: string = "";
             res.on("data", (chunk) => {
                 body += chunk;
             });
             res.on("end", () => {
                 let data: indexData = JSON.parse(body);
-                test[0].assignFlair({
-                    text: `Price: ${data.price.commafy()} Mc`,
+                post.assignFlair({
+                    text: `Price: ${data.price.commafy()} M¢`,
                     cssClass: settings.CSSclass
                 });
-                console.log("Success for post: " + test[0].id);
+                console.log("Success for post: " + post.id);
             });
         }).on("error", (e) => {
             console.error(e.message);
         });
-
-        await Sleep(10000)
     }
-})();
+}
 
-
-
-declare global {
-    interface indexData {
-        name: string;
-        full_name: string;
-        type: string;
-        price: number;
-        locked: boolean;
+async function flairUser(user: RedditUser | string): Promise<void>{
+    if(typeof user === "string"){
+        user = r.getUser(user);
     }
 
-    interface Number {
-        commafy(): string;
-    }
+    http.get(`${webUrl}/indices/${user.name}:user`, (res) => {
+        let body: string = "";
+        res.on("data", (chunk) => {
+            body += chunk;
+        });
+        res.on("end", () => {
+            let data: userData = JSON.parse(body);
+            (user as RedditUser).assignFlair({
+                text: `${data.index.price.commafy()} M¢`,
+                cssClass: settings.CSSclass
+            });
+            console.log("Success for user: " + (user as RedditUser).name);
+        });
+    }).on("error", (e) => {
+        console.error(e.message);
+    });
+}
 
-    interface String {
-        commafy(): string;
-    }
+function Sleep(ms: number) {
+    return new Promise(res => setTimeout(res, ms));
 }
 
 Number.prototype.commafy = function () {
     return String(this).commafy();
-},
+};
 
 String.prototype.commafy = function () {
     return this.replace(/(^|[^\w.])(\d{4,})/g, ($0, $1, $2) => {
         return $1 + $2.replace(/\d(?=(?:\d\d\d)+(?!\d))/g, "$&,");
     });
-}
+};
